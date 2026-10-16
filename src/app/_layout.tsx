@@ -1,18 +1,28 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
-
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
-
-SplashScreen.preventAutoHideAsync();
+import { Tabs } from "expo-router";
+import { PortfolioProvider } from "@/context/PortfolioContext";
+import { Text } from "react-native";
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
+    <PortfolioProvider>
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarStyle: { backgroundColor: "#020617" },
+        }}
+      >
+        <Tabs.Screen name="index" options={{ title: "Dashboard" }} />
+        <Tabs.Screen name="portfolio" options={{ title: "Portfolio" }} />
+        <Tabs.Screen
+          name="manage"
+          options={{
+            title: "Manage",
+            tabBarIcon: ({ color }) => (
+              <Text style={{ color, fontSize: 20 }}>⚙️</Text>
+            ),
+          }}
+        />
+      </Tabs>
+    </PortfolioProvider>
   );
 }
