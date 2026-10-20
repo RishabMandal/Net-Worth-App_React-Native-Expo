@@ -1,13 +1,15 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import * as XLSX from 'xlsx';
 import { usePortfolio } from '../context/PortfolioContext';
 
 export function QuickActions() {
-  // Destructure the new bulk function
-  const { addMultipleAssets } = usePortfolio(); 
+  const { assets, addMultipleAssets } = usePortfolio(); 
 
+  // --- 1. IMPORT BROKER DATA (Groww) ---
   const handleUploadFile = async (assetCategory: 'Stock' | 'Mutual Fund') => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
@@ -48,11 +50,8 @@ export function QuickActions() {
   const processGrowwData = (data: any[][], category: 'Stock' | 'Mutual Fund') => {
     let headerRowIndex = -1;
     let nameIdx = -1, currentIdx = -1, investedIdx = -1;
-    
-    // Array to hold all the parsed items before sending to Context
     const newAssetsToImport: any[] = [];
 
-    // 1. Scan downwards to find the actual table headers
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
       if (!Array.isArray(row)) continue;
@@ -74,13 +73,11 @@ export function QuickActions() {
       return;
     }
 
-    // 2. Extract data from the rows below the header
     for (let i = headerRowIndex + 1; i < data.length; i++) {
       const row = data[i];
       if (!Array.isArray(row) || row.length === 0) continue;
 
       const name = row[nameIdx];
-      
       const cleanNumber = (val: any) => {
         if (typeof val === 'number') return val;
         return parseFloat((val || '0').toString().replace(/,/g, ''));
@@ -89,7 +86,6 @@ export function QuickActions() {
       const currentValue = cleanNumber(row[currentIdx]);
       const investedValue = investedIdx !== -1 ? cleanNumber(row[investedIdx]) : 0;
 
-      // Clean invalid rows (like blank spaces or sub-headers)
       if (name && currentValue > 0) {
         const nameStr = name.toString().trim();
         newAssetsToImport.push({
@@ -102,12 +98,82 @@ export function QuickActions() {
       }
     }
 
-    // 3. Bulk Add all found items to Context at exactly the same time
     if (newAssetsToImport.length > 0) {
       addMultipleAssets(newAssetsToImport);
       Alert.alert("Sync Complete", `Successfully imported ${newAssetsToImport.length} ${category}s!`);
     } else {
       Alert.alert("Sync Failed", "File was read successfully, but no valid assets were found.");
+    }
+  };
+
+  // --- 2. EXPORT EXCEL ---
+  const handleExportExcel = async () => {
+    try {
+      const exportData = assets.map((a: any) => ({
+        'Asset Name': a.name,
+        'Category': a.category,
+        'Owner': a.owner,
+        'Invested Value': a.category === 'Liability' ? 0 : a.value - a.pl,
+        'Current Value': a.value,
+        'Total Gain/Loss': a.pl
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Portfolio");
+      
+      const base64 = XLSX.write(workbook, { type: 'base64', bookType: 'xlsx' });
+      const fileUri = FileSystem.documentDirectory + 'MeraFolio_Export.xlsx';
+      
+      await FileSystem.writeAsStringAsync(fileUri, base64, { encoding: FileSystem.EncodingType.Base64 });
+      await Sharing.shareAsync(fileUri, { mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', dialogTitle: 'Export Portfolio' });
+    } catch (error) {
+      Alert.alert("Export Failed", "Could not generate Excel file.");
+    }
+  };
+
+  // --- 3. JSON BACKUP & RESTORE ---
+  const handleBackupRestore = () => {
+    Alert.alert(
+      "Data Portability",
+      "Securely backup or restore your offline portfolio data.",
+      [
+        { text: "Create Backup", onPress: generateBackup },
+        { text: "Restore Backup", onPress: restoreBackup },
+        { text: "Cancel", style: "cancel" }
+      ]
+    );
+  };
+
+  const generateBackup = async () => {
+    try {
+      const jsonString = JSON.stringify(assets, null, 2);
+      const fileUri = FileSystem.documentDirectory + 'MeraFolio_Backup.json';
+      await FileSystem.writeAsStringAsync(fileUri, jsonString, { encoding: FileSystem.EncodingType.UTF8 });
+      await Sharing.shareAsync(fileUri, { mimeType: 'application/json', dialogTitle: 'Save Backup File' });
+    } catch (error) {
+      Alert.alert("Backup Failed", "Could not create backup file.");
+    }
+  };
+
+  const restoreBackup = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({ type: ['application/json', '*/*'], copyToCacheDirectory: true });
+      if (!result.canceled) {
+        const file = result.assets[0];
+        const response = await fetch(file.uri);
+        const jsonText = await response.text();
+        const importedData = JSON.parse(jsonText);
+        
+        if (Array.isArray(importedData)) {
+          addMultipleAssets(importedData);
+          Alert.alert("Restore Complete", `Successfully merged ${importedData.length} assets from backup.`);
+        } else {
+          Alert.alert("Invalid File", "The selected file is not a valid MeraFolio backup.");
+        }
+      }
+    } catch (error) {
+      Alert.alert("Restore Failed", "Could not read the backup file.");
     }
   };
 
@@ -123,12 +189,12 @@ export function QuickActions() {
         <Text style={styles.label}>Import{'\n'}MFs</Text>
       </TouchableOpacity>
       
-      <TouchableOpacity style={styles.actionBtn}>
-        <Text style={styles.icon}>⏱️</Text>
-        <Text style={styles.label}>Live{'\n'}Prices</Text>
+      <TouchableOpacity style={styles.actionBtn} onPress={handleBackupRestore}>
+        <Text style={styles.icon}>💾</Text>
+        <Text style={styles.label}>Backup{'\n'}Restore</Text>
       </TouchableOpacity>
       
-      <TouchableOpacity style={styles.actionBtn}>
+      <TouchableOpacity style={styles.actionBtn} onPress={handleExportExcel}>
         <Text style={styles.icon}>📊</Text>
         <Text style={styles.label}>Export{'\n'}Excel</Text>
       </TouchableOpacity>

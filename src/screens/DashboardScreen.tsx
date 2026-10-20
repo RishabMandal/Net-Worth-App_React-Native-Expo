@@ -1,19 +1,22 @@
 import React from 'react';
 import { ScrollView, View, Text, SafeAreaView, TouchableOpacity, StyleSheet, Platform, StatusBar } from 'react-native';
+import { useRouter } from 'expo-router';
 import { CircularChart } from '../components/CircularChart';
 import { ActionItems } from '../components/ActionItems';
 import { AssetPerformance } from '../components/AssetPerformance';
 import { FamilyWealth } from '../components/FamilyWealth';
 
 export default function DashboardScreen() {
+  const router = useRouter();
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <View style={styles.header}>
-          <View>
-            <Text style={styles.logoText}>MeraFolio</Text>
+          <TouchableOpacity onPress={() => router.push('/backup')} activeOpacity={0.7}>
+            <Text style={styles.logoText}>MeraNetWorth</Text>
             <Text style={styles.tagline}>Your Trusted Wealth Partner</Text>
-          </View>
+          </TouchableOpacity>
           <TouchableOpacity style={styles.memberBtn}>
             <Text style={styles.memberBtnText}>All Members ▾</Text>
           </TouchableOpacity>
@@ -21,10 +24,7 @@ export default function DashboardScreen() {
 
         <CircularChart />
         <ActionItems />
-        
-        {/* New Component Inserted Here */}
         <AssetPerformance />
-        
         <FamilyWealth />
       </ScrollView>
     </SafeAreaView>

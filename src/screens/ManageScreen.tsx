@@ -15,24 +15,20 @@ const SORT_OPTIONS = ['Highest Value', 'Lowest Value', 'A - Z', 'Z - A'];
 export default function ManageScreen() {
   const { assets, addAsset, updateAsset, deleteAsset } = usePortfolio();
   
-  // Modal State
   const [modalVisible, setModalVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
 
-  // Standard Form State
   const [name, setName] = useState('');
   const [owner, setOwner] = useState('Self');
   const [category, setCategory] = useState('Stock');
   const [value, setValue] = useState('');
   const [pl, setPl] = useState('');
 
-  // Precious Metals Form State
   const [weightGrams, setWeightGrams] = useState('');
   const [carat, setCarat] = useState('24');
   const [pricePer10g, setPricePer10g] = useState('');
 
-  // List Controls State
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
   const [sortOption, setSortOption] = useState('Highest Value');
@@ -50,7 +46,6 @@ export default function ManageScreen() {
     setValue(Math.abs(item.value).toString()); 
     setPl(item.pl.toString());
     
-    // Load precious metal data if it exists
     setWeightGrams(item.weightGrams ? item.weightGrams.toString() : '');
     setCarat(item.carat ? item.carat.toString() : '24');
     setPricePer10g(item.pricePer10g ? item.pricePer10g.toString() : '');
@@ -58,12 +53,10 @@ export default function ManageScreen() {
     setModalVisible(true);
   };
 
-  // Live calculation for precious metals
   const getCalculatedMetalValue = () => {
     const w = parseFloat(weightGrams) || 0;
     const p = parseFloat(pricePer10g) || 0;
     const c = parseFloat(carat) || 24;
-    // Formula applies carat purity ratio to the 24k base rate per 10g
     return (w / 10) * p * (c / 24);
   };
 
@@ -81,7 +74,6 @@ export default function ManageScreen() {
       name, owner, category, 
       value: numericValue, 
       pl: parseFloat(pl) || 0,
-      // Save these fields so they reload when you edit
       weightGrams: isPreciousMetal ? parseFloat(weightGrams) || 0 : undefined,
       carat: isPreciousMetal ? parseFloat(carat) || 24 : undefined,
       pricePer10g: isPreciousMetal ? parseFloat(pricePer10g) || 0 : undefined,
@@ -93,8 +85,14 @@ export default function ManageScreen() {
 
   const formatCurrency = (num: number) => '₹' + (num / 100000).toFixed(2) + ' L';
   const formatStandardCurrency = (num: number) => '₹' + num.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+  
+  // Format the ISO string into a readable date
+  const formatDate = (isoString?: string) => {
+    if (!isoString) return 'Just now';
+    const date = new Date(isoString);
+    return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
 
-  // Process Assets: Filter -> Sort
   const processedAssets = assets
     .filter((asset: any) => {
       const matchesSearch = asset.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -120,7 +118,6 @@ export default function ManageScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Search, Filter, and Sort Controls */}
       <View style={styles.controlsContainer}>
         <View style={styles.searchContainer}>
           <Text style={styles.searchIcon}>🔍</Text>
@@ -167,7 +164,6 @@ export default function ManageScreen() {
         </ScrollView>
       </View>
 
-      {/* Asset List */}
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         {processedAssets.length === 0 ? (
           <Text style={styles.emptyText}>No assets found matching your criteria.</Text>
@@ -177,6 +173,8 @@ export default function ManageScreen() {
               <View style={styles.cardLeft}>
                 <Text style={styles.name} numberOfLines={1}>{acc.name}</Text>
                 <Text style={styles.owner}>{acc.owner} • {acc.category}</Text>
+                {/* Last Modified Date Display */}
+                <Text style={styles.dateText}>Updated: {formatDate(acc.lastModified)}</Text>
               </View>
               <View style={{ alignItems: 'flex-end' }}>
                 <Text style={[styles.value, acc.category === 'Liability' && styles.textRed]}>
@@ -189,7 +187,6 @@ export default function ManageScreen() {
         )}
       </ScrollView>
 
-      {/* Editor Modal */}
       <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
           <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end' }}>
@@ -215,7 +212,6 @@ export default function ManageScreen() {
               <Text style={styles.label}>Owner</Text>
               <TextInput style={styles.input} placeholderTextColor="#64748b" placeholder="Self / Spouse" value={owner} onChangeText={setOwner} />
 
-              {/* Conditional Inputs for Precious Metals */}
               {isPreciousMetal ? (
                 <>
                   <View style={styles.row}>
@@ -285,7 +281,6 @@ const styles = StyleSheet.create({
   addBtn: { backgroundColor: '#3b82f6', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
   addBtnText: { color: '#ffffff', fontWeight: 'bold', fontSize: 14 },
   
-  // Controls (Search, Filter, Sort)
   controlsContainer: { paddingHorizontal: 20, paddingTop: 16, borderBottomWidth: 1, borderBottomColor: '#1e293b', paddingBottom: 8 },
   searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', borderRadius: 12, paddingHorizontal: 12, marginBottom: 12, height: 44 },
   searchIcon: { fontSize: 16, marginRight: 8 },
@@ -312,6 +307,7 @@ const styles = StyleSheet.create({
   cardLeft: { flex: 1, paddingRight: 16 },
   name: { color: '#f8fafc', fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
   owner: { color: '#64748b', fontSize: 12 },
+  dateText: { color: '#475569', fontSize: 10, marginTop: 4, fontWeight: '500' }, // Added style for the date
   value: { color: '#ffffff', fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
   textRed: { color: '#ef4444' },
   editHint: { color: '#3b82f6', fontSize: 12 },
