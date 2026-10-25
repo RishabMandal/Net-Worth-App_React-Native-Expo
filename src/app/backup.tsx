@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Platform, StatusBar, Alert, TextInput, ScrollView, KeyboardAvoidingView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Platform, StatusBar, Alert, TextInput, ScrollView, KeyboardAvoidingView, Dimensions } from 'react-native';
+import Svg, { Defs, RadialGradient, Stop, Circle } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
@@ -7,12 +8,16 @@ import * as Sharing from 'expo-sharing';
 import * as Clipboard from 'expo-clipboard';
 import { usePortfolio } from '../context/PortfolioContext';
 
+const { width, height } = Dimensions.get('window');
+
 export default function BackupScreen() {
   const router = useRouter();
   const { assets, replaceAllAssets } = usePortfolio();
 
   const [pastedJson, setPastedJson] = useState('');
-  const currentJsonString = JSON.stringify(assets, null, 2);
+  
+  // FIX: Safely fallback to an empty array if assets is undefined during initial mount
+  const currentJsonString = JSON.stringify(assets || [], null, 2);
 
   const handleGenerateBackupFile = async () => {
     try {
@@ -93,96 +98,207 @@ export default function BackupScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Text style={styles.backBtnText}>← Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Data Management</Text>
-          <View style={{ width: 60 }} />
-        </View>
+    <View style={styles.root}>
+      {/* 4-Color Ambient Glass Background */}
+      <View style={[StyleSheet.absoluteFill, { zIndex: -1 }]} pointerEvents="none">
+        <Svg height={height} width={width}>
+          <Defs>
+            <RadialGradient id="glow1" cx="50%" cy="50%" rx="50%" ry="50%">
+              <Stop offset="0%" stopColor="#3b82f6" stopOpacity="0.35" />
+              <Stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+            </RadialGradient>
+            <RadialGradient id="glow2" cx="50%" cy="50%" rx="50%" ry="50%">
+              <Stop offset="0%" stopColor="#9333ea" stopOpacity="0.3" />
+              <Stop offset="100%" stopColor="#9333ea" stopOpacity="0" />
+            </RadialGradient>
+            <RadialGradient id="glow3" cx="50%" cy="50%" rx="50%" ry="50%">
+              <Stop offset="0%" stopColor="#2dd4bf" stopOpacity="0.25" />
+              <Stop offset="100%" stopColor="#2dd4bf" stopOpacity="0" />
+            </RadialGradient>
+            <RadialGradient id="glow4" cx="50%" cy="50%" rx="50%" ry="50%">
+              <Stop offset="0%" stopColor="#f43f5e" stopOpacity="0.25" />
+              <Stop offset="100%" stopColor="#f43f5e" stopOpacity="0" />
+            </RadialGradient>
+          </Defs>
+          <Circle cx={0} cy={height * 0.1} r={width * 0.7} fill="url(#glow1)" />
+          <Circle cx={width} cy={height * 0.8} r={width * 0.8} fill="url(#glow2)" />
+          <Circle cx={width * 0.7} cy={height * 0.4} r={width * 0.5} fill="url(#glow3)" />
+          <Circle cx={width * 0.1} cy={height * 0.7} r={width * 0.6} fill="url(#glow4)" />
+        </Svg>
+      </View>
 
-        <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-          
-          {/* EXPORT SECTION */}
-          <Text style={styles.sectionTitle}>Export Backup</Text>
-          <View style={styles.card}>
-            <TextInput 
-              style={styles.readonlyTextArea} 
-              value={currentJsonString} 
-              multiline 
-              editable={false} 
-            />
-            <View style={styles.buttonRow}>
-              <TouchableOpacity style={styles.outlineBtn} onPress={handleCopyToClipboard}>
-                <Text style={styles.outlineBtnText}>📋 Copy Text</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.primaryBtn} onPress={handleGenerateBackupFile}>
-                <Text style={styles.primaryBtnText}>💾 Save File</Text>
-              </TouchableOpacity>
-            </View>
+      <SafeAreaView style={styles.safeArea}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+              <Text style={styles.backBtnText}>← Back</Text>
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Data Management</Text>
+            <View style={{ width: 60 }} />
           </View>
 
-          {/* IMPORT SECTION */}
-          <Text style={[styles.sectionTitle, { marginTop: 24, color: '#ef4444' }]}>Import & Reset</Text>
-          <View style={[styles.card, styles.dangerCard]}>
-            <Text style={styles.warningText}>
-              Warning: Importing data will permanently overwrite your current portfolio.
-            </Text>
+          <ScrollView style={styles.container} contentContainerStyle={styles.content}>
             
-            <TextInput 
-              style={styles.editableTextArea} 
-              placeholder="Paste your JSON backup here..." 
-              placeholderTextColor="#64748b"
-              value={pastedJson} 
-              onChangeText={setPastedJson}
-              multiline 
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            
-            <View style={styles.buttonRow}>
-              <TouchableOpacity style={styles.dangerOutlineBtn} onPress={handleRestoreFromPaste}>
-                <Text style={styles.dangerOutlineBtnText}>Reset from Text</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.dangerPrimaryBtn} onPress={handleRestoreFromFile}>
-                <Text style={styles.primaryBtnText}>Upload File</Text>
-              </TouchableOpacity>
+            {/* EXPORT SECTION */}
+            <Text style={styles.sectionTitle}>Export Backup</Text>
+            <View style={styles.glassCard}>
+              <TextInput 
+                style={styles.readonlyTextArea} 
+                value={currentJsonString} 
+                multiline 
+                editable={false} 
+              />
+              <View style={styles.buttonRow}>
+                <TouchableOpacity style={styles.outlineBtn} onPress={handleCopyToClipboard}>
+                  <Text style={styles.outlineBtnText}>📋 Copy Text</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.primaryBtn} onPress={handleGenerateBackupFile}>
+                  <Text style={styles.primaryBtnText}>💾 Save File</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
 
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+            {/* IMPORT SECTION */}
+            <Text style={[styles.sectionTitle, { marginTop: 24, color: '#f87171' }]}>Import & Reset</Text>
+            <View style={[styles.glassCard, styles.dangerCard]}>
+              <Text style={styles.warningText}>
+                Warning: Importing data will permanently overwrite your current portfolio.
+              </Text>
+              
+              <TextInput 
+                style={styles.editableTextArea} 
+                placeholder="Paste your JSON backup here..." 
+                placeholderTextColor="#94a3b8"
+                value={pastedJson} 
+                onChangeText={setPastedJson}
+                multiline 
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              
+              <View style={styles.buttonRow}>
+                <TouchableOpacity style={styles.dangerOutlineBtn} onPress={handleRestoreFromPaste}>
+                  <Text style={styles.dangerOutlineBtnText}>Reset from Text</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.dangerPrimaryBtn} onPress={handleRestoreFromFile}>
+                  <Text style={styles.primaryBtnText}>Upload File</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#020617', paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#1e293b' },
+  root: { 
+    flex: 1, 
+    backgroundColor: "#020617" 
+  },
+  safeArea: { 
+    flex: 1, 
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 
+  },
+  header: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    padding: 20, 
+    borderBottomWidth: 1, 
+    borderBottomColor: 'rgba(255,255,255,0.05)' 
+  },
   backBtn: { width: 60 },
-  backBtnText: { color: '#3b82f6', fontSize: 16, fontWeight: 'bold' },
+  backBtnText: { color: '#60a5fa', fontSize: 16, fontWeight: 'bold' },
   headerTitle: { color: '#ffffff', fontSize: 20, fontWeight: 'bold' },
   container: { flex: 1 },
   content: { padding: 20 },
   
   sectionTitle: { color: '#f8fafc', fontSize: 18, fontWeight: 'bold', marginBottom: 12 },
-  card: { backgroundColor: '#0f172a', padding: 16, borderRadius: 16, borderColor: '#1e293b', borderWidth: 1, marginBottom: 16 },
-  dangerCard: { borderColor: 'rgba(239, 68, 68, 0.3)', backgroundColor: 'rgba(239, 68, 68, 0.05)' },
   
-  readonlyTextArea: { backgroundColor: '#020617', color: '#64748b', height: 120, padding: 12, borderRadius: 8, fontSize: 12, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', textAlignVertical: 'top', marginBottom: 16 },
-  editableTextArea: { backgroundColor: '#020617', color: '#ffffff', height: 140, padding: 12, borderRadius: 8, fontSize: 12, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', textAlignVertical: 'top', marginBottom: 16, borderColor: '#1e293b', borderWidth: 1 },
+  glassCard: { 
+    backgroundColor: 'rgba(30, 41, 59, 0.6)', 
+    padding: 20, 
+    borderRadius: 20, 
+    borderColor: 'rgba(255, 255, 255, 0.15)', 
+    borderWidth: 1, 
+    marginBottom: 16 
+  },
+  dangerCard: { 
+    borderColor: 'rgba(239, 68, 68, 0.3)', 
+    backgroundColor: 'rgba(239, 68, 68, 0.1)' 
+  },
   
-  warningText: { color: '#ef4444', fontSize: 12, marginBottom: 12, fontWeight: '600' },
+  readonlyTextArea: { 
+    backgroundColor: 'rgba(0, 0, 0, 0.3)', 
+    color: '#94a3b8', 
+    height: 120, 
+    padding: 16, 
+    borderRadius: 16, 
+    fontSize: 12, 
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', 
+    textAlignVertical: 'top', 
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)'
+  },
+  editableTextArea: { 
+    backgroundColor: 'rgba(0, 0, 0, 0.4)', 
+    color: '#ffffff', 
+    height: 140, 
+    padding: 16, 
+    borderRadius: 16, 
+    fontSize: 12, 
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', 
+    textAlignVertical: 'top', 
+    marginBottom: 16, 
+    borderColor: 'rgba(255,255,255,0.1)', 
+    borderWidth: 1 
+  },
+  
+  warningText: { color: '#fca5a5', fontSize: 13, marginBottom: 16, fontWeight: '600', lineHeight: 20 },
   
   buttonRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  outlineBtn: { flex: 1, backgroundColor: 'transparent', borderColor: '#3b82f6', borderWidth: 1, padding: 12, borderRadius: 12, marginRight: 8, alignItems: 'center' },
-  outlineBtnText: { color: '#3b82f6', fontWeight: 'bold' },
-  primaryBtn: { flex: 1, backgroundColor: '#3b82f6', padding: 12, borderRadius: 12, marginLeft: 8, alignItems: 'center' },
+  outlineBtn: { 
+    flex: 1, 
+    backgroundColor: 'rgba(59, 130, 246, 0.1)', 
+    borderColor: '#3b82f6', 
+    borderWidth: 1, 
+    padding: 14, 
+    borderRadius: 16, 
+    marginRight: 8, 
+    alignItems: 'center' 
+  },
+  outlineBtnText: { color: '#60a5fa', fontWeight: 'bold' },
+  primaryBtn: { 
+    flex: 1, 
+    backgroundColor: '#3b82f6', 
+    padding: 14, 
+    borderRadius: 16, 
+    marginLeft: 8, 
+    alignItems: 'center' 
+  },
   primaryBtnText: { color: '#ffffff', fontWeight: 'bold' },
   
-  dangerOutlineBtn: { flex: 1, backgroundColor: 'transparent', borderColor: '#ef4444', borderWidth: 1, padding: 12, borderRadius: 12, marginRight: 8, alignItems: 'center' },
-  dangerOutlineBtnText: { color: '#ef4444', fontWeight: 'bold' },
-  dangerPrimaryBtn: { flex: 1, backgroundColor: '#ef4444', padding: 12, borderRadius: 12, marginLeft: 8, alignItems: 'center' },
+  dangerOutlineBtn: { 
+    flex: 1, 
+    backgroundColor: 'rgba(239, 68, 68, 0.1)', 
+    borderColor: '#ef4444', 
+    borderWidth: 1, 
+    padding: 14, 
+    borderRadius: 16, 
+    marginRight: 8, 
+    alignItems: 'center' 
+  },
+  dangerOutlineBtnText: { color: '#fca5a5', fontWeight: 'bold' },
+  dangerPrimaryBtn: { 
+    flex: 1, 
+    backgroundColor: '#ef4444', 
+    padding: 14, 
+    borderRadius: 16, 
+    marginLeft: 8, 
+    alignItems: 'center' 
+  },
 });

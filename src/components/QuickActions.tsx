@@ -203,7 +203,7 @@ export function QuickActions() {
 }
 
 const styles = StyleSheet.create({
-  container: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#0f172a', padding: 16, borderRadius: 16, borderColor: '#1e293b', borderWidth: 1, marginBottom: 24 },
+  container: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: 'rgba(30, 41, 59, 0.6)', padding: 16, borderRadius: 16, borderColor: 'rgba(255, 255, 255, 0.15)', borderWidth: 1, marginBottom: 24 },
   actionBtn: { alignItems: 'center', flex: 1 },
   icon: { fontSize: 20, marginBottom: 8 },
   label: { color: '#cbd5e1', fontSize: 10, textAlign: 'center' },

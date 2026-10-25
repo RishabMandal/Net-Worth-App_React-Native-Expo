@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "net-worth-tracker",
+    "name": "Net Worth Tracker",
     "slug": "net-worth-tracker",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -35,7 +35,10 @@
         }
       ],
       "expo-sharing",
-      "expo-font"
+      "expo-font",
+      "expo-image",
+      "expo-status-bar",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -42,7 +42,7 @@ export function MetricsGrid() {
 
 const styles = StyleSheet.create({
   container: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 16 },
-  card: { width: '48%', backgroundColor: '#0f172a', borderRadius: 16, padding: 16, marginBottom: 16, borderColor: '#1e293b', borderWidth: 1 },
+  card: { width: '48%', backgroundColor: 'rgba(30, 41, 59, 0.6)', borderRadius: 16, padding: 16, marginBottom: 16, borderColor: 'rgba(255, 255, 255, 0.15)', borderWidth: 1 },
   label: { color: '#94a3b8', fontSize: 12, marginBottom: 8 },
   value: { color: '#ffffff', fontSize: 20, fontWeight: 'bold' },
   textGreen: { color: '#10b981' },
