@@ -14,11 +14,12 @@ const CATEGORY_COLORS: any = {
 };
 
 export function AssetPerformance() {
-  const { assets } = usePortfolio();
+  // 🚨 CHANGED: Destructure filteredAssets instead of all assets
+  const { filteredAssets } = usePortfolio();
 
   // 1. Group by category, sum values, and calculate returns
   const performanceData = Object.entries(
-    assets.reduce((acc: any, item: any) => {
+    filteredAssets.reduce((acc: any, item: any) => {
       // Exclude liabilities from performance metrics
       if (item.category === 'Liability') return acc; 
       

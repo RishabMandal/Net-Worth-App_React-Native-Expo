@@ -38,7 +38,7 @@ export function FamilyWealth() {
 
 // Keep the exact same StyleSheet from your previous FamilyWealth.tsx
 const styles = StyleSheet.create({
-  card: { backgroundColor: '#0f172a', borderColor: '#1e293b', borderWidth: 1, borderRadius: 24, padding: 20, marginBottom: 24 },
+  card: { backgroundColor: 'rgba(30, 41, 59, 0.6)', borderColor: 'rgba(255, 255, 255, 0.15)', borderWidth: 1, borderRadius: 24, padding: 20, marginBottom: 24 },
   title: { color: '#ffffff', fontSize: 18, fontWeight: 'bold', marginBottom: 12 },
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#1e293b', marginBottom: 12 },
   totalLabel: { color: '#94a3b8', fontSize: 14, fontWeight: '600' },

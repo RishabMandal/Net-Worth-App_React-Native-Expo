@@ -3,10 +3,11 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { usePortfolio } from '../context/PortfolioContext';
 
 export function ActionItems() {
-  const { assets } = usePortfolio();
+  // 🚨 CHANGED: Destructure filteredAssets instead of all assets
+  const { filteredAssets } = usePortfolio();
 
   // 1. Filter for losing assets, calculate drop percentage, and sort by worst performers
-  const losingAssets = assets
+  const losingAssets = filteredAssets
     .filter((a: any) => a.pl < 0 && a.category !== 'Liability')
     .map((a: any) => {
       const investedValue = a.value - a.pl;
@@ -78,10 +79,10 @@ const styles = StyleSheet.create({
   itemRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#1e293b' },
   lastItem: { borderBottomWidth: 0 },
   itemLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 8 },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#ef4444', marginRight: 12 }, // Changed to Red
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#ef4444', marginRight: 12 }, 
   itemLabel: { color: '#cbd5e1', fontSize: 14, fontWeight: '500' },
   itemRight: { flexDirection: 'row', alignItems: 'center' },
-  itemStat: { color: '#ef4444', fontSize: 14, fontWeight: 'bold', marginRight: 8 }, // Changed to Red
+  itemStat: { color: '#ef4444', fontSize: 14, fontWeight: 'bold', marginRight: 8 }, 
   chevron: { color: '#64748b', fontSize: 16 },
   emptyText: { color: '#94a3b8', fontSize: 14, marginTop: 4 },
 });

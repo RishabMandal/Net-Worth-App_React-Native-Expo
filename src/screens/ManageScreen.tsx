@@ -15,6 +15,7 @@ import {
   View,
 } from "react-native";
 import Svg, { Circle, Defs, RadialGradient, Stop } from "react-native-svg";
+import * as Haptics from 'expo-haptics';
 import { usePortfolio } from "../context/PortfolioContext";
 
 const { width, height } = Dimensions.get("window");
@@ -55,6 +56,7 @@ export default function ManageScreen() {
   const [sortOption, setSortOption] = useState("Highest Value");
 
   const openAddModal = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setIsEditing(false);
     setEditId(null);
     setName("");
@@ -69,6 +71,7 @@ export default function ManageScreen() {
   };
 
   const openEditModal = (item: any) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setIsEditing(true);
     setEditId(item.id);
     setName(item.name);
@@ -90,6 +93,7 @@ export default function ManageScreen() {
   };
 
   const handleSave = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     let numericValue = parseFloat(value) || 0;
     const isPreciousMetal = category === "Gold" || category === "Silver";
 
@@ -150,22 +154,18 @@ export default function ManageScreen() {
       <View style={StyleSheet.absoluteFill}>
         <Svg height={height+60} width={width} style={StyleSheet.absoluteFill}>
           <Defs>
-            {/* Top Left Blue Glow */}
             <RadialGradient id="glow1" cx="50%" cy="50%" rx="50%" ry="50%">
               <Stop offset="0%" stopColor="#3b82f6" stopOpacity="0.35" />
               <Stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
             </RadialGradient>
-            {/* Bottom Right Purple Glow */}
             <RadialGradient id="glow2" cx="50%" cy="50%" rx="50%" ry="50%">
               <Stop offset="0%" stopColor="#9333ea" stopOpacity="0.3" />
               <Stop offset="100%" stopColor="#9333ea" stopOpacity="0" />
             </RadialGradient>
-            {/* Middle Teal Glow */}
             <RadialGradient id="glow3" cx="50%" cy="50%" rx="50%" ry="50%">
               <Stop offset="0%" stopColor="#2dd4bf" stopOpacity="0.2" />
               <Stop offset="100%" stopColor="#2dd4bf" stopOpacity="0" />
             </RadialGradient>
-            {/* Bottom Left Rose/Pink Glow */}
             <RadialGradient id="glow4" cx="50%" cy="50%" rx="50%" ry="50%">
               <Stop offset="0%" stopColor="#f43f5e" stopOpacity="0.25" />
               <Stop offset="100%" stopColor="#f43f5e" stopOpacity="0" />
@@ -212,7 +212,10 @@ export default function ManageScreen() {
             onChangeText={setSearchQuery}
           />
           {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery("")}>
+            <TouchableOpacity onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setSearchQuery("");
+            }}>
               <Text style={styles.clearIcon}>✕</Text>
             </TouchableOpacity>
           )}
@@ -231,7 +234,10 @@ export default function ManageScreen() {
                 styles.filterChip,
                 filterCategory === cat && styles.activeFilterChip,
               ]}
-              onPress={() => setFilterCategory(cat)}
+              onPress={() => {
+                Haptics.selectionAsync();
+                setFilterCategory(cat);
+              }}
             >
               <Text
                 style={[
@@ -256,7 +262,6 @@ export default function ManageScreen() {
           </Text>
         ) : (
           processedAssets.map((acc: any) => (
-            // 2. Improved Glass Card with lighter backing to let blur shine through
             <View key={acc.id} style={styles.cardWrapper}>
               <BlurView intensity={45} tint="dark" style={styles.cardBlur}>
                 <TouchableOpacity
@@ -325,7 +330,10 @@ export default function ManageScreen() {
                   <TouchableOpacity
                     key={cat}
                     style={[styles.chip, category === cat && styles.activeChip]}
-                    onPress={() => setCategory(cat)}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setCategory(cat);
+                    }}
                   >
                     <Text
                       style={[
@@ -445,7 +453,10 @@ export default function ManageScreen() {
               <View style={styles.modalActions}>
                 <TouchableOpacity
                   style={styles.cancelBtn}
-                  onPress={() => setModalVisible(false)}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setModalVisible(false);
+                  }}
                 >
                   <Text style={styles.cancelBtnText}>Cancel</Text>
                 </TouchableOpacity>
@@ -458,6 +469,7 @@ export default function ManageScreen() {
                 <TouchableOpacity
                   style={styles.deleteBtn}
                   onPress={() => {
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                     if (editId) deleteAsset(editId);
                     setModalVisible(false);
                   }}

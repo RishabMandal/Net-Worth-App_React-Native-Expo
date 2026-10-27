@@ -17,6 +17,9 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
   const [assets, setAssets] = useState<any[]>([]);
   const [history, setHistory] = useState<any[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  
+  // NEW: State for member filtering
+  const [activeFilter, setActiveFilter] = useState('All'); // 'All', 'Self', 'Spouse'
 
   useEffect(() => {
     const loadData = async () => {
@@ -45,21 +48,29 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isLoaded) return;
     
-    const currentNetWorth = assets.reduce((sum, item) => sum + item.value, 0);
+    // Calculate wealth for all 3 views simultaneously
+    const allWorth = assets.reduce((sum, item) => sum + item.value, 0);
+    const selfWorth = assets.filter(a => a.owner === 'Self').reduce((sum, item) => sum + item.value, 0);
+    const spouseWorth = assets.filter(a => a.owner === 'Spouse').reduce((sum, item) => sum + item.value, 0);
+    
     const todayStr = new Date().toISOString().split('T')[0];
     
     setHistory(prevHistory => {
       const existingRecordIndex = prevHistory.findIndex(h => h.date === todayStr);
       let newHistory = [...prevHistory];
 
+      const dailyRecord = { 
+        date: todayStr, 
+        netWorth: allWorth, // Legacy fallback
+        All: allWorth, 
+        Self: selfWorth, 
+        Spouse: spouseWorth 
+      };
+
       if (existingRecordIndex >= 0) {
-        if (newHistory[existingRecordIndex].netWorth !== currentNetWorth) {
-          newHistory[existingRecordIndex].netWorth = currentNetWorth;
-        } else {
-          return prevHistory;
-        }
+        newHistory[existingRecordIndex] = dailyRecord;
       } else {
-        newHistory.push({ date: todayStr, netWorth: currentNetWorth });
+        newHistory.push(dailyRecord);
       }
 
       AsyncStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(newHistory));
@@ -90,19 +101,23 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
     setAssets(prev => prev.filter(a => a.id !== id));
   };
 
-  // NEW: Completely wipe and replace all data from a backup file
   const replaceAllAssets = (importedAssets: any[]) => {
     setAssets(importedAssets);
   };
 
-  const netWorth = assets.reduce((sum, item) => sum + item.value, 0);
-  const totalGainLoss = assets.reduce((sum, item) => sum + item.pl, 0);
+  // NEW: Filter assets based on the active selection
+  const filteredAssets = activeFilter === 'All' ? assets : assets.filter(a => a.owner === activeFilter);
 
-  const categoryTotals = assets.reduce((acc: any, item) => {
+  // UPDATED: Math now uses filteredAssets so the dashboard respects the filter
+  const netWorth = filteredAssets.reduce((sum, item) => sum + item.value, 0);
+  const totalGainLoss = filteredAssets.reduce((sum, item) => sum + item.pl, 0);
+
+  const categoryTotals = filteredAssets.reduce((acc: any, item) => {
     acc[item.category] = (acc[item.category] || 0) + item.value;
     return acc;
   }, {});
 
+  // Keep wealthByMember using ALL assets so the FamilyWealth component always shows the full picture
   const wealthByMember = assets.reduce((acc: any, item) => {
     acc[item.owner] = (acc[item.owner] || 0) + item.value;
     return acc;
@@ -111,8 +126,10 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
   if (!isLoaded) return null; 
 
   return (
+    // NEW: Expose activeFilter, setActiveFilter, and filteredAssets
     <PortfolioContext.Provider value={{ 
-      assets, history, addAsset, addMultipleAssets, updateAsset, deleteAsset, replaceAllAssets,
+      assets, filteredAssets, activeFilter, setActiveFilter, history, 
+      addAsset, addMultipleAssets, updateAsset, deleteAsset, replaceAllAssets,
       netWorth, totalGainLoss, categoryTotals, wealthByMember 
     }}>
       {children}

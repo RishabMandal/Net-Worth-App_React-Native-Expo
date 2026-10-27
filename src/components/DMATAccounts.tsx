@@ -2,10 +2,11 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { usePortfolio } from "../context/PortfolioContext";
 
 export function DMATAccounts() {
-  const { assets, deleteAsset } = usePortfolio();
+  // 🚨 CHANGED: Destructure filteredAssets
+  const { filteredAssets, deleteAsset } = usePortfolio();
 
-  // 1. Include both Stocks and Mutual Funds
-  const marketHoldings = assets.filter(
+  // 1. Include both Stocks and Mutual Funds, but use filteredAssets!
+  const marketHoldings = filteredAssets.filter(
     (a: any) => a.category === "Stock" || a.category === "Mutual Fund",
   );
 

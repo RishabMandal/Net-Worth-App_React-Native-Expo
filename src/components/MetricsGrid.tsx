@@ -3,7 +3,8 @@ import { View, Text, StyleSheet } from 'react-native';
 import { usePortfolio } from '../context/PortfolioContext';
 
 export function MetricsGrid() {
-  const { netWorth, totalGainLoss, assets } = usePortfolio();
+  // 🚨 CHANGED: Destructure filteredAssets
+  const { netWorth, totalGainLoss, filteredAssets } = usePortfolio();
   
   // Calculate total invested based on current net worth minus gains
   const totalInvested = netWorth - totalGainLoss;
@@ -33,8 +34,9 @@ export function MetricsGrid() {
       </View>
       <View style={styles.card}>
         <Text style={styles.label}>Positions</Text>
-        <Text style={styles.value}>{assets.length}</Text>
-        <Text style={styles.subtext}>{assets.length} Total Assets</Text>
+        {/* 🚨 CHANGED: Reads the length of the filtered list */}
+        <Text style={styles.value}>{filteredAssets.length}</Text>
+        <Text style={styles.subtext}>{filteredAssets.length} Total Assets</Text>
       </View>
     </View>
   );
