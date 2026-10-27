@@ -9,6 +9,7 @@ const HISTORY_STORAGE_KEY = '@portfolio_history';
 const DEFAULT_ASSETS = [
   { id: '1', name: 'Primary Home', category: 'Real Estate', owner: 'Self', value: 13500000, pl: 2500000, lastModified: new Date().toISOString() },
   { id: '4', name: 'Emergency Fund', category: 'Cash', owner: 'Self', value: 650000, pl: 0, lastModified: new Date().toISOString() },
+  { id: '5', name: 'Emergency Fund', category: 'Cash', owner: 'Spouse', value: 650000, pl: 0, lastModified: new Date().toISOString() },
   { id: '7', name: 'Home Loan', category: 'Liability', owner: 'Self', value: -11000000, pl: 0, lastModified: new Date().toISOString() },
 ];
 
