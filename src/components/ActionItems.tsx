@@ -49,7 +49,7 @@ export function ActionItems() {
 
       {losingAssets.map((item: any, index: number) => {
         // Truncate long names to prevent UI wrapping issues
-        const displayName = item.name.length > 20 ? item.name.substring(0, 20) + '...' : item.name;
+        const displayName = item.name.length > 19 ? item.name.substring(0, 19) + '...' : item.name;
 
         return (
           <TouchableOpacity key={item.id} style={[styles.itemRow, index === losingAssets.length - 1 && styles.lastItem]}>
@@ -58,7 +58,7 @@ export function ActionItems() {
               <Text style={styles.itemLabel}>{displayName} is down</Text>
             </View>
             <View style={styles.itemRight}>
-              <Text style={styles.itemStat}>{item.percentDrop.toFixed(1)}%</Text>
+              <Text style={styles.itemStat}>{item.percentDrop.toFixed(2)}%</Text>
               <Text style={styles.chevron}>›</Text>
             </View>
           </TouchableOpacity>

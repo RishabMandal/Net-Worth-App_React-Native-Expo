@@ -1,11 +1,11 @@
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import * as Haptics from "expo-haptics";
 import { usePortfolio } from "../context/PortfolioContext";
 
 export function DMATAccounts() {
-  // 🚨 CHANGED: Destructure filteredAssets
   const { filteredAssets, deleteAsset } = usePortfolio();
 
-  // 1. Include both Stocks and Mutual Funds, but use filteredAssets!
+  // 1. Include both Stocks and Mutual Funds
   const marketHoldings = filteredAssets.filter(
     (a: any) => a.category === "Stock" || a.category === "Mutual Fund",
   );
@@ -14,6 +14,38 @@ export function DMATAccounts() {
     if (Math.abs(num) >= 10000000)
       return "₹" + (num / 10000000).toFixed(2) + " Cr";
     return "₹" + (num / 100000).toFixed(2) + " L";
+  };
+
+  // Generic function to handle mass deletion with confirmation
+  const confirmDeleteAll = (category: string, label: string) => {
+    // Find IDs of all assets in the current view that match the category
+    const targetIds = filteredAssets
+      .filter((a: any) => a.category === category)
+      .map((a: any) => a.id);
+
+    if (targetIds.length === 0) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert(`No ${label}`, `There are no ${label} to delete in this view.`);
+      return;
+    }
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    Alert.alert(
+      `Delete All ${label}`,
+      `Are you sure you want to delete all ${targetIds.length} ${label}? This cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete All",
+          style: "destructive",
+          onPress: () => {
+            // Delete them all sequentially 
+            targetIds.forEach((id: string) => deleteAsset(id));
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -27,7 +59,6 @@ export function DMATAccounts() {
 
         return (
           <View key={acc.id} style={styles.card}>
-            {/* Added flex: 1 to leftCol to prevent pushing prices off screen */}
             <View style={styles.leftCol}>
               <View style={styles.iconBox}>
                 <Text style={styles.icon}>
@@ -66,7 +97,10 @@ export function DMATAccounts() {
             </View>
 
             <TouchableOpacity
-              onPress={() => deleteAsset(acc.id)}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                deleteAsset(acc.id);
+              }}
               style={styles.deleteBtn}
             >
               <Text style={styles.deleteText}>✕</Text>
@@ -75,12 +109,20 @@ export function DMATAccounts() {
         );
       })}
 
+      {/* REPLACED BUTTONS WITH MASS DELETE OPTIONS */}
       <View style={styles.buttonRow}>
-        <TouchableOpacity style={styles.outlineBtn}>
-          <Text style={styles.outlineBtnText}>+ Add Lumpsum</Text>
+        <TouchableOpacity 
+          style={[styles.dangerOutlineBtn, { marginRight: 8 }]} 
+          onPress={() => confirmDeleteAll("Stock", "Stocks")}
+        >
+          <Text style={styles.dangerOutlineBtnText}>Delete All Stocks</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.primaryBtn}>
-          <Text style={styles.primaryBtnText}>+ Add Holding</Text>
+        
+        <TouchableOpacity 
+          style={[styles.dangerOutlineBtn, { marginLeft: 8 }]} 
+          onPress={() => confirmDeleteAll("Mutual Fund", "Mutual Funds")}
+        >
+          <Text style={styles.dangerOutlineBtnText}>Delete All MFs</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -107,7 +149,6 @@ const styles = StyleSheet.create({
     position: "relative",
   },
 
-  // Layout Fixes
   leftCol: {
     flexDirection: "row",
     alignItems: "center",
@@ -153,7 +194,6 @@ const styles = StyleSheet.create({
   textGreen: { color: "#10b981" },
   textRed: { color: "#ef4444" },
 
-  // Delete Button styling
   deleteBtn: { position: "absolute", top: 8, right: 8, padding: 4, zIndex: 10 },
   deleteText: { color: "#64748b", fontSize: 12, fontWeight: "bold" },
 
@@ -163,24 +203,19 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 24,
   },
-  outlineBtn: {
+  
+  // NEW STYLES FOR DANGER BUTTONS
+  dangerOutlineBtn: {
     flex: 1,
-    backgroundColor: "#0f172a",
-    borderColor: "#3b82f6",
+    backgroundColor: "rgba(239, 68, 68, 0.1)",
+    borderColor: "#ef4444",
     borderWidth: 1,
     padding: 12,
     borderRadius: 12,
-    marginRight: 8,
     alignItems: "center",
   },
-  outlineBtnText: { color: "#3b82f6", fontWeight: "bold" },
-  primaryBtn: {
-    flex: 1,
-    backgroundColor: "#3b82f6",
-    padding: 12,
-    borderRadius: 12,
-    marginLeft: 8,
-    alignItems: "center",
+  dangerOutlineBtnText: { 
+    color: "#fca5a5", 
+    fontWeight: "bold" 
   },
-  primaryBtnText: { color: "#ffffff", fontWeight: "bold" },
 });

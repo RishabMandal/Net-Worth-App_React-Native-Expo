@@ -1,16 +1,21 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy'; 
 import * as Sharing from 'expo-sharing';
 import * as XLSX from 'xlsx';
+import * as Haptics from 'expo-haptics';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { usePortfolio } from '../context/PortfolioContext';
 
 export function QuickActions() {
   const { assets, addMultipleAssets } = usePortfolio(); 
+  const router = useRouter();
 
   // --- 1. IMPORT BROKER DATA (Groww) ---
   const handleUploadFile = async (assetCategory: 'Stock' | 'Mutual Fund') => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: ['*/*'],
@@ -35,14 +40,19 @@ export function QuickActions() {
             const parsedData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
             processGrowwData(parsedData as any[][], assetCategory);
           } catch (parseError: any) {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
             Alert.alert("Parsing Error", "Could not parse the file contents.");
           }
         };
         
-        reader.onerror = () => Alert.alert("Error", "Failed to read the file into memory.");
+        reader.onerror = () => {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          Alert.alert("Error", "Failed to read the file into memory.");
+        };
         reader.readAsDataURL(blob);
       }
     } catch (error: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert("Error", `Failed to pick document: ${error.message || error}`);
     }
   };
@@ -69,6 +79,7 @@ export function QuickActions() {
     }
 
     if (headerRowIndex === -1) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert("Sync Failed", "Could not find column headers (e.g., 'Instrument Name', 'Current Value') in this file.");
       return;
     }
@@ -100,14 +111,17 @@ export function QuickActions() {
 
     if (newAssetsToImport.length > 0) {
       addMultipleAssets(newAssetsToImport);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert("Sync Complete", `Successfully imported ${newAssetsToImport.length} ${category}s!`);
     } else {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       Alert.alert("Sync Failed", "File was read successfully, but no valid assets were found.");
     }
   };
 
   // --- 2. EXPORT EXCEL ---
   const handleExportExcel = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const exportData = assets.map((a: any) => ({
         'Asset Name': a.name,
@@ -123,79 +137,53 @@ export function QuickActions() {
       XLSX.utils.book_append_sheet(workbook, worksheet, "Portfolio");
       
       const base64 = XLSX.write(workbook, { type: 'base64', bookType: 'xlsx' });
+      
       const fileUri = FileSystem.documentDirectory + 'MeraFolio_Export.xlsx';
       
       await FileSystem.writeAsStringAsync(fileUri, base64, { encoding: FileSystem.EncodingType.Base64 });
       await Sharing.shareAsync(fileUri, { mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', dialogTitle: 'Export Portfolio' });
+      
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert("Export Failed", "Could not generate Excel file.");
-    }
-  };
-
-  // --- 3. JSON BACKUP & RESTORE ---
-  const handleBackupRestore = () => {
-    Alert.alert(
-      "Data Portability",
-      "Securely backup or restore your offline portfolio data.",
-      [
-        { text: "Create Backup", onPress: generateBackup },
-        { text: "Restore Backup", onPress: restoreBackup },
-        { text: "Cancel", style: "cancel" }
-      ]
-    );
-  };
-
-  const generateBackup = async () => {
-    try {
-      const jsonString = JSON.stringify(assets, null, 2);
-      const fileUri = FileSystem.documentDirectory + 'MeraFolio_Backup.json';
-      await FileSystem.writeAsStringAsync(fileUri, jsonString, { encoding: FileSystem.EncodingType.UTF8 });
-      await Sharing.shareAsync(fileUri, { mimeType: 'application/json', dialogTitle: 'Save Backup File' });
-    } catch (error) {
-      Alert.alert("Backup Failed", "Could not create backup file.");
-    }
-  };
-
-  const restoreBackup = async () => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({ type: ['application/json', '*/*'], copyToCacheDirectory: true });
-      if (!result.canceled) {
-        const file = result.assets[0];
-        const response = await fetch(file.uri);
-        const jsonText = await response.text();
-        const importedData = JSON.parse(jsonText);
-        
-        if (Array.isArray(importedData)) {
-          addMultipleAssets(importedData);
-          Alert.alert("Restore Complete", `Successfully merged ${importedData.length} assets from backup.`);
-        } else {
-          Alert.alert("Invalid File", "The selected file is not a valid MeraFolio backup.");
-        }
-      }
-    } catch (error) {
-      Alert.alert("Restore Failed", "Could not read the backup file.");
     }
   };
 
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.actionBtn} onPress={() => handleUploadFile('Stock')}>
-        <Text style={styles.icon}>📈</Text>
+        <View style={styles.iconCircle}>
+          <Ionicons name="trending-up-outline" size={22} color="#60a5fa" />
+        </View>
         <Text style={styles.label}>Import{'\n'}Stocks</Text>
       </TouchableOpacity>
       
       <TouchableOpacity style={styles.actionBtn} onPress={() => handleUploadFile('Mutual Fund')}>
-        <Text style={styles.icon}>🏦</Text>
+        <View style={styles.iconCircle}>
+          <Ionicons name="pie-chart-outline" size={22} color="#c084fc" />
+        </View>
         <Text style={styles.label}>Import{'\n'}MFs</Text>
       </TouchableOpacity>
       
-      <TouchableOpacity style={styles.actionBtn} onPress={handleBackupRestore}>
-        <Text style={styles.icon}>💾</Text>
+      {/* 🚨 CHANGED: Navigates directly to /backup */}
+      <TouchableOpacity 
+        style={styles.actionBtn} 
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          router.push('/backup');
+        }}
+      >
+        <View style={styles.iconCircle}>
+          <Ionicons name="sync-outline" size={22} color="#2dd4bf" />
+        </View>
         <Text style={styles.label}>Backup{'\n'}Restore</Text>
       </TouchableOpacity>
       
       <TouchableOpacity style={styles.actionBtn} onPress={handleExportExcel}>
-        <Text style={styles.icon}>📊</Text>
+        <View style={styles.iconCircle}>
+          <Ionicons name="document-text-outline" size={22} color="#fbbf24" />
+        </View>
         <Text style={styles.label}>Export{'\n'}Excel</Text>
       </TouchableOpacity>
     </View>
@@ -203,8 +191,36 @@ export function QuickActions() {
 }
 
 const styles = StyleSheet.create({
-  container: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: 'rgba(30, 41, 59, 0.6)', padding: 16, borderRadius: 16, borderColor: 'rgba(255, 255, 255, 0.15)', borderWidth: 1, marginBottom: 24 },
-  actionBtn: { alignItems: 'center', flex: 1 },
-  icon: { fontSize: 20, marginBottom: 8 },
-  label: { color: '#cbd5e1', fontSize: 10, textAlign: 'center' },
+  container: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    backgroundColor: 'rgba(30, 41, 59, 0.6)', 
+    paddingVertical: 20,
+    paddingHorizontal: 12,
+    borderRadius: 20, 
+    borderColor: 'rgba(255, 255, 255, 0.15)', 
+    borderWidth: 1, 
+    marginBottom: 24 
+  },
+  actionBtn: { 
+    alignItems: 'center', 
+    flex: 1 
+  },
+  iconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  label: { 
+    color: '#cbd5e1', 
+    fontSize: 11, 
+    textAlign: 'center',
+    fontWeight: '600'
+  },
 });

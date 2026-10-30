@@ -67,7 +67,7 @@ export function AssetPerformance() {
             <View style={styles.rightCol}>
               <Text style={styles.valueText}>{formatCurrency(item.value)}</Text>
               <Text style={[styles.plText, isPositive ? styles.textGreen : styles.textRed]}>
-                {isPositive ? '+' : ''}{formatCurrency(item.pl)} ({isPositive ? '+' : ''}{item.percent.toFixed(1)}%)
+                {isPositive ? '+' : ''}{formatCurrency(item.pl)} ({isPositive ? '+' : ''}{item.percent.toFixed(2)}%)
               </Text>
             </View>
           </View>

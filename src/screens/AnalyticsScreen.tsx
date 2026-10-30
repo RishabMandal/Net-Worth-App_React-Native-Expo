@@ -151,7 +151,7 @@ export default function AnalyticsScreen() {
                 </Text>
                 <Text style={[styles.chartBadge, growthSinceStart >= 0 ? styles.bgGreen : styles.bgRed]}>
                   {growthSinceStart >= 0 ? "+" : ""}
-                  {growthPercentage.toFixed(1)}%
+                  {growthPercentage.toFixed(2)}%
                 </Text>
               </View>
 

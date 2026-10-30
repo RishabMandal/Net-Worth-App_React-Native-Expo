@@ -56,14 +56,14 @@ export default function PortfolioScreen() {
         </View>
 
         <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-          <View style={styles.toggleRow}>
+          {/* <View style={styles.toggleRow}>
             <TouchableOpacity style={styles.activeToggle}>
               <Text style={styles.activeToggleText}>By DMAT</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.inactiveToggle}>
               <Text style={styles.inactiveToggleText}>Combined</Text>
             </TouchableOpacity>
-          </View>
+          </View> */}
           
           <MetricsGrid />
           <Text style={styles.sectionTitle}>Quick Action</Text>
