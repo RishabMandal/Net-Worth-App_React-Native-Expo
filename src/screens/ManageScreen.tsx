@@ -36,6 +36,8 @@ const SORT_OPTIONS = ["Highest Value", "Lowest Value", "A - Z", "Z - A"];
 
 export default function ManageScreen() {
   const { assets, addAsset, updateAsset, deleteAsset } = usePortfolio();
+  
+  const todayStr = new Date().toISOString().split('T')[0];
 
   const [modalVisible, setModalVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -46,6 +48,11 @@ export default function ManageScreen() {
   const [category, setCategory] = useState("Stock");
   const [value, setValue] = useState("");
   const [pl, setPl] = useState("");
+  
+  // NEW: Date states & Holding Toggle
+  const [startDate, setStartDate] = useState(todayStr);
+  const [endDate, setEndDate] = useState("");
+  const [isHolding, setIsHolding] = useState(true);
 
   const [weightGrams, setWeightGrams] = useState("");
   const [carat, setCarat] = useState("24");
@@ -64,6 +71,9 @@ export default function ManageScreen() {
     setCategory("Stock");
     setValue("");
     setPl("");
+    setStartDate(todayStr);
+    setEndDate("");
+    setIsHolding(true);
     setWeightGrams("");
     setCarat("24");
     setPricePer10g("");
@@ -79,6 +89,17 @@ export default function ManageScreen() {
     setCategory(item.category);
     setValue(Math.abs(item.value).toString());
     setPl(item.pl.toString());
+    setStartDate(item.startDate || todayStr);
+    
+    // Check if the asset has a specific end date
+    if (item.endDate && item.endDate !== todayStr) {
+      setEndDate(item.endDate);
+      setIsHolding(false);
+    } else {
+      setEndDate("");
+      setIsHolding(true);
+    }
+    
     setWeightGrams(item.weightGrams ? item.weightGrams.toString() : "");
     setCarat(item.carat ? item.carat.toString() : "24");
     setPricePer10g(item.pricePer10g ? item.pricePer10g.toString() : "");
@@ -107,6 +128,8 @@ export default function ManageScreen() {
       category,
       value: numericValue,
       pl: parseFloat(pl) || 0,
+      startDate: startDate || todayStr,
+      endDate: isHolding ? "" : endDate, // Save as empty string if holding, Context will auto-use today's date
       weightGrams: isPreciousMetal ? parseFloat(weightGrams) || 0 : undefined,
       carat: isPreciousMetal ? parseFloat(carat) || 24 : undefined,
       pricePer10g: isPreciousMetal ? parseFloat(pricePer10g) || 0 : undefined,
@@ -121,7 +144,7 @@ export default function ManageScreen() {
   const formatStandardCurrency = (num: number) =>
     "₹" + num.toLocaleString("en-IN", { maximumFractionDigits: 0 });
   const formatDate = (isoString?: string) => {
-    if (!isoString) return "Just now";
+    if (!isoString) return "Present"; // Fallback for blank dates
     return new Date(isoString).toLocaleDateString("en-IN", {
       day: "numeric",
       month: "short",
@@ -150,7 +173,6 @@ export default function ManageScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* 1. True Ambient Glow using SVG Radial Gradients */}
       <View style={StyleSheet.absoluteFill}>
         <Svg height={height+60} width={width} style={StyleSheet.absoluteFill}>
           <Defs>
@@ -172,24 +194,9 @@ export default function ManageScreen() {
             </RadialGradient>
           </Defs>
           <Circle cx={0} cy={height * 0.1} r={width * 0.7} fill="url(#glow1)" />
-          <Circle
-            cx={width}
-            cy={height * 0.8}
-            r={width * 0.8}
-            fill="url(#glow2)"
-          />
-          <Circle
-            cx={width * 0.7}
-            cy={height * 0.4}
-            r={width * 0.5}
-            fill="url(#glow3)"
-          />
-          <Circle
-            cx={width * 0.1}
-            cy={height * 0.7}
-            r={width * 0.6}
-            fill="url(#glow4)"
-          />
+          <Circle cx={width} cy={height * 0.8} r={width * 0.8} fill="url(#glow2)" />
+          <Circle cx={width * 0.7} cy={height * 0.4} r={width * 0.5} fill="url(#glow3)" />
+          <Circle cx={width * 0.1} cy={height * 0.7} r={width * 0.6} fill="url(#glow4)" />
         </Svg>
       </View>
 
@@ -201,7 +208,6 @@ export default function ManageScreen() {
       </View>
 
       <View style={styles.controlsContainer}>
-        {/* Glass Search Bar */}
         <BlurView intensity={30} tint="dark" style={styles.searchContainer}>
           <Text style={styles.searchIcon}>🔍</Text>
           <TextInput
@@ -221,7 +227,6 @@ export default function ManageScreen() {
           )}
         </BlurView>
 
-        {/* Filter Chips */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -252,14 +257,9 @@ export default function ManageScreen() {
         </ScrollView>
       </View>
 
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.content}
-      >
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         {processedAssets.length === 0 ? (
-          <Text style={styles.emptyText}>
-            No assets found matching your criteria.
-          </Text>
+          <Text style={styles.emptyText}>No assets found matching your criteria.</Text>
         ) : (
           processedAssets.map((acc: any) => (
             <View key={acc.id} style={styles.cardWrapper}>
@@ -269,14 +269,10 @@ export default function ManageScreen() {
                   onPress={() => openEditModal(acc)}
                 >
                   <View style={styles.cardLeft}>
-                    <Text style={styles.name} numberOfLines={1}>
-                      {acc.name}
-                    </Text>
-                    <Text style={styles.owner}>
-                      {acc.owner} • {acc.category}
-                    </Text>
+                    <Text style={styles.name} numberOfLines={1}>{acc.name}</Text>
+                    <Text style={styles.owner}>{acc.owner} • {acc.category}</Text>
                     <Text style={styles.dateText}>
-                      Updated: {formatDate(acc.lastModified)}
+                      Since: {formatDate(acc.startDate)}
                     </Text>
                   </View>
                   <View style={{ alignItems: "flex-end" }}>
@@ -304,28 +300,15 @@ export default function ManageScreen() {
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.modalOverlay}
-        >
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
           <BlurView intensity={50} tint="dark" style={styles.modalView}>
-            <ScrollView
-              contentContainerStyle={{
-                paddingBottom: 24,
-                paddingTop: 24,
-                paddingHorizontal: 24,
-              }}
-            >
+            <ScrollView contentContainerStyle={{ paddingBottom: 24, paddingTop: 24, paddingHorizontal: 24 }}>
               <Text style={styles.modalTitle}>
                 {isEditing ? "Edit Item" : "New Item"}
               </Text>
 
               <Text style={styles.label}>Category</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={{ marginBottom: 16 }}
-              >
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
                 {CATEGORIES.map((cat) => (
                   <TouchableOpacity
                     key={cat}
@@ -335,12 +318,7 @@ export default function ManageScreen() {
                       setCategory(cat);
                     }}
                   >
-                    <Text
-                      style={[
-                        styles.chipText,
-                        category === cat && styles.activeChipText,
-                      ]}
-                    >
+                    <Text style={[styles.chipText, category === cat && styles.activeChipText]}>
                       {cat}
                     </Text>
                   </TouchableOpacity>
@@ -348,62 +326,67 @@ export default function ManageScreen() {
               </ScrollView>
 
               <Text style={styles.label}>Item Name</Text>
-              <TextInput
-                style={styles.input}
-                placeholderTextColor="#64748b"
-                placeholder="e.g. Primary Residence"
-                value={name}
-                onChangeText={setName}
-              />
+              <TextInput style={styles.input} placeholderTextColor="#64748b" placeholder="e.g. Primary Residence" value={name} onChangeText={setName} />
 
               <Text style={styles.label}>Owner</Text>
-              <TextInput
-                style={styles.input}
-                placeholderTextColor="#64748b"
-                placeholder="Self / Spouse"
-                value={owner}
-                onChangeText={setOwner}
-              />
+              <TextInput style={styles.input} placeholderTextColor="#64748b" placeholder="Self / Spouse" value={owner} onChangeText={setOwner} />
+
+              {/* UPDATED: Date Inputs with Holding Toggle */}
+              <View style={styles.row}>
+                <View style={styles.col}>
+                  <Text style={styles.label}>Start Date</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholderTextColor="#64748b"
+                    placeholder="YYYY-MM-DD"
+                    value={startDate}
+                    onChangeText={setStartDate}
+                  />
+                </View>
+                <View style={{ width: 12 }} />
+                <View style={styles.col}>
+                  <View style={styles.endDateHeader}>
+                    <Text style={[styles.label, { marginBottom: 0 }]}>End Date</Text>
+                    <TouchableOpacity 
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setIsHolding(!isHolding);
+                      }}
+                    >
+                      <Text style={[styles.holdingToggle, isHolding ? styles.holdingActive : styles.holdingInactive]}>
+                        {isHolding ? '✓ HOLDING' : 'SOLD'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                  <TextInput
+                    style={[styles.input, isHolding && styles.inputDisabled]}
+                    placeholderTextColor="#64748b"
+                    placeholder="YYYY-MM-DD"
+                    value={isHolding ? "Present" : endDate}
+                    onChangeText={setEndDate}
+                    editable={!isHolding}
+                  />
+                </View>
+              </View>
 
               {isPreciousMetal ? (
                 <>
                   <View style={styles.row}>
                     <View style={styles.col}>
                       <Text style={styles.label}>Weight (Grams)</Text>
-                      <TextInput
-                        style={styles.input}
-                        placeholderTextColor="#64748b"
-                        placeholder="0"
-                        value={weightGrams}
-                        onChangeText={setWeightGrams}
-                        keyboardType="numeric"
-                      />
+                      <TextInput style={styles.input} placeholderTextColor="#64748b" placeholder="0" value={weightGrams} onChangeText={setWeightGrams} keyboardType="numeric" />
                     </View>
                     <View style={{ width: 12 }} />
                     <View style={styles.col}>
                       <Text style={styles.label}>Purity (Carat)</Text>
-                      <TextInput
-                        style={styles.input}
-                        placeholderTextColor="#64748b"
-                        placeholder="24"
-                        value={carat}
-                        onChangeText={setCarat}
-                        keyboardType="numeric"
-                      />
+                      <TextInput style={styles.input} placeholderTextColor="#64748b" placeholder="24" value={carat} onChangeText={setCarat} keyboardType="numeric" />
                     </View>
                   </View>
 
                   <View style={styles.row}>
                     <View style={styles.col}>
                       <Text style={styles.label}>Market Rate / 10g (₹)</Text>
-                      <TextInput
-                        style={styles.input}
-                        placeholderTextColor="#64748b"
-                        placeholder="0.00"
-                        value={pricePer10g}
-                        onChangeText={setPricePer10g}
-                        keyboardType="numeric"
-                      />
+                      <TextInput style={styles.input} placeholderTextColor="#64748b" placeholder="0.00" value={pricePer10g} onChangeText={setPricePer10g} keyboardType="numeric" />
                     </View>
                     <View style={{ width: 12 }} />
                     <View style={styles.col}>
@@ -420,18 +403,9 @@ export default function ManageScreen() {
                 <View style={styles.row}>
                   <View style={styles.col}>
                     <Text style={styles.label}>
-                      {category === "Liability"
-                        ? "Loan Amount (₹)"
-                        : "Current Value (₹)"}
+                      {category === "Liability" ? "Loan Amount (₹)" : "Current Value (₹)"}
                     </Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholderTextColor="#64748b"
-                      placeholder="0.00"
-                      value={value}
-                      onChangeText={setValue}
-                      keyboardType="numeric"
-                    />
+                    <TextInput style={styles.input} placeholderTextColor="#64748b" placeholder="0.00" value={value} onChangeText={setValue} keyboardType="numeric" />
                   </View>
                 </View>
               )}
@@ -439,14 +413,7 @@ export default function ManageScreen() {
               {category !== "Liability" && (
                 <>
                   <Text style={styles.label}>Total Gain / Loss (₹)</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholderTextColor="#64748b"
-                    placeholder="0.00 or -0.00"
-                    value={pl}
-                    onChangeText={setPl}
-                    keyboardType="numeric"
-                  />
+                  <TextInput style={styles.input} placeholderTextColor="#64748b" placeholder="0.00 or -0.00" value={pl} onChangeText={setPl} keyboardType="numeric" />
                 </>
               )}
 
@@ -486,202 +453,56 @@ export default function ManageScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#020617", // Very dark navy base
-    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.05)",
-  },
-  headerTitle: {
-    color: "#ffffff",
-    fontSize: 24,
-    fontWeight: "bold",
-    letterSpacing: 0.5,
-  },
-  addBtn: {
-    backgroundColor: "#3b82f6",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 12,
-  },
+  safeArea: { flex: 1, backgroundColor: "#020617", paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0 },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.05)" },
+  headerTitle: { color: "#ffffff", fontSize: 24, fontWeight: "bold", letterSpacing: 0.5 },
+  addBtn: { backgroundColor: "#3b82f6", paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12 },
   addBtnText: { color: "#ffffff", fontWeight: "bold", fontSize: 14 },
-
-  controlsContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.05)",
-    paddingBottom: 8,
-  },
-  // Updated Search Bar for Glass Look
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    marginBottom: 16,
-    height: 50,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.15)",
-    backgroundColor: "rgba(15, 23, 42, 0.3)", // Slight tint so it's not totally transparent
-  },
+  controlsContainer: { paddingHorizontal: 20, paddingTop: 16, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.05)", paddingBottom: 8 },
+  searchContainer: { flexDirection: "row", alignItems: "center", borderRadius: 16, paddingHorizontal: 14, marginBottom: 16, height: 50, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255, 255, 255, 0.15)", backgroundColor: "rgba(15, 23, 42, 0.3)" },
   searchIcon: { fontSize: 18, marginRight: 8 },
   searchInput: { flex: 1, color: "#ffffff", fontSize: 15 },
   clearIcon: { color: "#94a3b8", fontSize: 18, padding: 4 },
-
   filterRow: { marginBottom: 12 },
-  filterChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 8,
-    backgroundColor: "rgba(15, 23, 42, 0.6)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-  },
+  filterChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, marginRight: 8, backgroundColor: "rgba(15, 23, 42, 0.6)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
   activeFilterChip: { backgroundColor: "#3b82f6", borderColor: "#3b82f6" },
   filterChipText: { color: "#94a3b8", fontSize: 13, fontWeight: "600" },
   activeFilterChipText: { color: "#ffffff" },
-
   container: { flex: 1 },
-  content: { 
-    padding: 20, 
-    paddingBottom: 100 // Extra padding so bottom items aren't hidden by the floating tab bar
-  },
-  emptyText: {
-    color: "#64748b",
-    textAlign: "center",
-    marginTop: 40,
-    fontSize: 14,
-  },
-
-  // --- Glass Card Styling ---
-  cardWrapper: {
-    borderRadius: 20,
-    marginBottom: 16,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.12)", // The literal "glass edge" reflection
-  },
-  cardBlur: {
-    flex: 1,
-  },
-  cardTouchable: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 18,
-    backgroundColor: "rgba(15, 23, 42, 0.4)", // Translucent to allow blur and SVG to show through
-  },
+  content: { padding: 20, paddingBottom: 100 },
+  emptyText: { color: "#64748b", textAlign: "center", marginTop: 40, fontSize: 14 },
+  cardWrapper: { borderRadius: 20, marginBottom: 16, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255, 255, 255, 0.12)" },
+  cardBlur: { flex: 1 },
+  cardTouchable: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 18, backgroundColor: "rgba(15, 23, 42, 0.4)" },
   cardLeft: { flex: 1, paddingRight: 16 },
   name: { color: "#f8fafc", fontSize: 17, fontWeight: "bold", marginBottom: 6 },
   owner: { color: "#cbd5e1", fontSize: 13 },
-  dateText: {
-    color: "#64748b",
-    fontSize: 11,
-    marginTop: 6,
-    fontWeight: "500",
-    textTransform: "uppercase",
-  },
+  dateText: { color: "#64748b", fontSize: 11, marginTop: 6, fontWeight: "500", textTransform: "uppercase" },
   value: { color: "#ffffff", fontSize: 18, fontWeight: "800", marginBottom: 4 },
   textRed: { color: "#ef4444" },
   editHint: { color: "#60a5fa", fontSize: 12, fontWeight: "600", marginTop: 4 },
-
-  // --- Glass Modal Styling ---
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.75)", // Darker backdrop
-    justifyContent: "flex-end",
-  },
-  modalView: {
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    overflow: "hidden",
-    borderTopWidth: 1,
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)", // Glass rim on the modal
-    backgroundColor: "rgba(15, 23, 42, 0.7)", // Needs to be slightly dark so text is readable
-    maxHeight: "90%",
-  },
-  modalTitle: {
-    color: "#ffffff",
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 24,
-    textAlign: "center",
-  },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0, 0, 0, 0.75)", justifyContent: "flex-end" },
+  modalView: { borderTopLeftRadius: 32, borderTopRightRadius: 32, overflow: "hidden", borderTopWidth: 1, borderLeftWidth: 1, borderRightWidth: 1, borderColor: "rgba(255, 255, 255, 0.2)", backgroundColor: "rgba(15, 23, 42, 0.7)", maxHeight: "90%" },
+  modalTitle: { color: "#ffffff", fontSize: 22, fontWeight: "bold", marginBottom: 24, textAlign: "center" },
   label: { color: "#cbd5e1", fontSize: 13, marginBottom: 8, fontWeight: "600" },
-  input: {
-    backgroundColor: "rgba(0, 0, 0, 0.3)", // Inset glass look
-    color: "#ffffff",
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 20,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.05)",
-  },
-  calculatedInput: {
-    backgroundColor: "rgba(59, 130, 246, 0.15)",
-    borderColor: "rgba(59, 130, 246, 0.5)",
-    justifyContent: "center",
-  },
+  input: { backgroundColor: "rgba(0, 0, 0, 0.3)", color: "#ffffff", padding: 16, borderRadius: 16, marginBottom: 20, fontSize: 16, borderWidth: 1, borderColor: "rgba(255,255,255,0.05)" },
+  inputDisabled: { opacity: 0.5 },
+  endDateHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  holdingToggle: { fontSize: 10, fontWeight: '900', letterSpacing: 0.5 },
+  holdingActive: { color: '#3b82f6' },
+  holdingInactive: { color: '#64748b' },
+  calculatedInput: { backgroundColor: "rgba(59, 130, 246, 0.15)", borderColor: "rgba(59, 130, 246, 0.5)", justifyContent: "center" },
   calculatedText: { color: "#60a5fa", fontWeight: "bold", fontSize: 16 },
   row: { flexDirection: "row" },
   col: { flex: 1 },
-  modalActions: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 12,
-  },
-  cancelBtn: {
-    flex: 1,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    padding: 16,
-    borderRadius: 16,
-    marginRight: 8,
-    alignItems: "center",
-  },
+  modalActions: { flexDirection: "row", justifyContent: "space-between", marginTop: 12 },
+  cancelBtn: { flex: 1, backgroundColor: "rgba(255,255,255,0.1)", padding: 16, borderRadius: 16, marginRight: 8, alignItems: "center" },
   cancelBtnText: { color: "#f8fafc", fontWeight: "bold", fontSize: 16 },
-  saveBtn: {
-    flex: 1,
-    backgroundColor: "#3b82f6",
-    padding: 16,
-    borderRadius: 16,
-    marginLeft: 8,
-    alignItems: "center",
-  },
+  saveBtn: { flex: 1, backgroundColor: "#3b82f6", padding: 16, borderRadius: 16, marginLeft: 8, alignItems: "center" },
   saveBtnText: { color: "#ffffff", fontWeight: "bold", fontSize: 16 },
-  deleteBtn: {
-    marginTop: 24,
-    alignItems: "center",
-    padding: 16,
-    backgroundColor: "rgba(239, 68, 68, 0.15)",
-    borderWidth: 1,
-    borderColor: "rgba(239, 68, 68, 0.3)",
-    borderRadius: 16,
-  },
+  deleteBtn: { marginTop: 24, alignItems: "center", padding: 16, backgroundColor: "rgba(239, 68, 68, 0.15)", borderWidth: 1, borderColor: "rgba(239, 68, 68, 0.3)", borderRadius: 16 },
   deleteBtnText: { color: "#fca5a5", fontWeight: "bold", fontSize: 16 },
-
-  chip: {
-    backgroundColor: "rgba(0,0,0,0.3)",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 24,
-    marginRight: 10,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-    marginBottom: 20,
-  },
+  chip: { backgroundColor: "rgba(0,0,0,0.3)", paddingHorizontal: 16, paddingVertical: 12, borderRadius: 24, marginRight: 10, borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", marginBottom: 20 },
   activeChip: { backgroundColor: "#3b82f6", borderColor: "#3b82f6" },
   chipText: { color: "#94a3b8", fontWeight: "bold" },
   activeChipText: { color: "#ffffff" },

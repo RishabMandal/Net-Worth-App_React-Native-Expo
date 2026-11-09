@@ -6,11 +6,15 @@ const PortfolioContext = createContext<any>(null);
 const ASSETS_STORAGE_KEY = '@portfolio_assets';
 const HISTORY_STORAGE_KEY = '@portfolio_history';
 
+const today = new Date().toISOString().split('T')[0];
+const lastYear = new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toISOString().split('T')[0];
+
 const DEFAULT_ASSETS = [
-  { id: '1', name: 'Primary Home', category: 'Real Estate', owner: 'Self', value: 13500000, pl: 2500000, lastModified: new Date().toISOString() },
-  { id: '4', name: 'Emergency Fund', category: 'Cash', owner: 'Self', value: 650000, pl: 0, lastModified: new Date().toISOString() },
-  { id: '5', name: 'Emergency Fund', category: 'Cash', owner: 'Spouse', value: 650000, pl: 0, lastModified: new Date().toISOString() },
-  { id: '7', name: 'Home Loan', category: 'Liability', owner: 'Self', value: -11000000, pl: 0, lastModified: new Date().toISOString() },
+  // Added startDate and endDate to defaults
+  { id: '1', name: 'Primary Home', category: 'Real Estate', owner: 'Self', value: 13500000, pl: 2500000, startDate: '2020-01-01', endDate: today, lastModified: new Date().toISOString() },
+  { id: '4', name: 'Emergency Fund', category: 'Cash', owner: 'Self', value: 650000, pl: 0, startDate: lastYear, endDate: today, lastModified: new Date().toISOString() },
+  { id: '5', name: 'Emergency Fund', category: 'Cash', owner: 'Spouse', value: 650000, pl: 0, startDate: lastYear, endDate: today, lastModified: new Date().toISOString() },
+  { id: '7', name: 'Home Loan', category: 'Liability', owner: 'Self', value: -11000000, pl: 0, startDate: '2020-01-01', endDate: today, lastModified: new Date().toISOString() },
 ];
 
 export function PortfolioProvider({ children }: { children: React.ReactNode }) {
@@ -18,8 +22,7 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
   const [history, setHistory] = useState<any[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   
-  // NEW: State for member filtering
-  const [activeFilter, setActiveFilter] = useState('All'); // 'All', 'Self', 'Spouse'
+  const [activeFilter, setActiveFilter] = useState('All'); 
 
   useEffect(() => {
     const loadData = async () => {
@@ -48,7 +51,6 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isLoaded) return;
     
-    // Calculate wealth for all 3 views simultaneously
     const allWorth = assets.reduce((sum, item) => sum + item.value, 0);
     const selfWorth = assets.filter(a => a.owner === 'Self').reduce((sum, item) => sum + item.value, 0);
     const spouseWorth = assets.filter(a => a.owner === 'Spouse').reduce((sum, item) => sum + item.value, 0);
@@ -61,7 +63,7 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
 
       const dailyRecord = { 
         date: todayStr, 
-        netWorth: allWorth, // Legacy fallback
+        netWorth: allWorth, 
         All: allWorth, 
         Self: selfWorth, 
         Spouse: spouseWorth 
@@ -105,10 +107,8 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
     setAssets(importedAssets);
   };
 
-  // NEW: Filter assets based on the active selection
   const filteredAssets = activeFilter === 'All' ? assets : assets.filter(a => a.owner === activeFilter);
 
-  // UPDATED: Math now uses filteredAssets so the dashboard respects the filter
   const netWorth = filteredAssets.reduce((sum, item) => sum + item.value, 0);
   const totalGainLoss = filteredAssets.reduce((sum, item) => sum + item.pl, 0);
 
@@ -117,7 +117,6 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
     return acc;
   }, {});
 
-  // Keep wealthByMember using ALL assets so the FamilyWealth component always shows the full picture
   const wealthByMember = assets.reduce((acc: any, item) => {
     acc[item.owner] = (acc[item.owner] || 0) + item.value;
     return acc;
@@ -126,7 +125,6 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
   if (!isLoaded) return null; 
 
   return (
-    // NEW: Expose activeFilter, setActiveFilter, and filteredAssets
     <PortfolioContext.Provider value={{ 
       assets, filteredAssets, activeFilter, setActiveFilter, history, 
       addAsset, addMultipleAssets, updateAsset, deleteAsset, replaceAllAssets,
